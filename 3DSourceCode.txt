@@ -1,0 +1,161 @@
+
+import java.util.Random;
+import org.lwjgl.*;
+import org.lwjgl.input.*;
+import org.lwjgl.opengl.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.util.glu.GLU.*;
+
+/**
+ *
+ * @author saqwedrf
+ */
+public class Initialzer {
+
+    private boolean finished = false;
+    private double camx, camy, camz, rot, pit;
+    private double delta = 0; //The time since the last frame.
+    private static double playerHeight = 2.1;
+    private static double speed = 2.2; //Speed of the player in meters per second.
+    private static double xSensitivity = (1.0 / 8.0); //1 degree for every 8 pixels that the mouse moves.
+    private static double ySensitivity = (1.0 / 12.0); //1 degree for every 12 pixels that the mouse moves.
+
+    public Initialzer() {
+
+        try {
+            init();
+        } catch (LWJGLException ex) {
+            System.exit(1);
+        }
+
+        run();
+
+    }
+
+    private void init() throws LWJGLException {
+
+        Display.setTitle("Game");
+        //Display.setFullscreen(true);
+
+        //Sets up the display to be 500 x 500 pixels.
+        DisplayMode d = new DisplayMode(700, 700);
+        d = Display.getDesktopDisplayMode();
+
+        Display.setDisplayMode(d);
+
+        Display.setFullscreen(true);
+        Display.setVSyncEnabled(true);
+        //Creates the window.
+        Display.create();
+
+        //Copy pasted from website seems to work:
+        //Opens the projection matrix and sets it to the default value.
+        glMatrixMode(GL11.GL_PROJECTION);
+        gluPerspective(90.0f, d.getWidth() / (float) d.getHeight(), 0.1f, 200.0f);
+
+        //Enables checking to see if the current face is visible or not (behind).
+        glEnable(GL_DEPTH_TEST);
+
+        //Opens the ModelView matrix and resets it. I had no idea it was broken.
+        glMatrixMode(GL11.GL_MODELVIEW);
+
+        Mouse.setGrabbed(true);
+    }
+
+    private void run() {
+
+        while (!finished) {
+            Display.update();
+            Display.sync(60);
+            getDelta();
+
+            input();
+            render();
+
+            Display.setTitle("FPS: " + 1 / delta);
+
+            if (Display.isCloseRequested()) {
+                finished = true;
+            }
+        }
+
+        Display.destroy();
+    }
+
+    private void render() {
+        Random ra = new Random();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glLoadIdentity();
+
+        glRotated(pit, 1.0, 0.0, 0.0);
+        glRotated(rot, 0.0, 1.0, 0.0);
+
+        glTranslated(camx, camy - playerHeight, camz);
+
+        glBegin(GL_QUADS);
+        glVertex3d(1.0, -1.0, -2.0);
+        glVertex3d(-1.0, -1.0, -2.0);
+        glVertex3d(-1.0, 1.0, -2.0);
+        glVertex3d(1.0, 1.0, -2.0);
+        glEnd();
+    }
+    private double cosr, sinr, sinp, cosp;
+    private double deltax, deltay, deltaz;
+
+    private void input() {
+        deltax = 0;
+        deltay = 0;
+        deltaz = 0;
+
+        cosr = Math.cos(rot * (Math.PI / 180));
+        sinr = Math.sin(rot * (Math.PI / 180));
+        cosp = Math.cos(pit * (Math.PI / 180));
+        sinp = Math.sin(pit * (Math.PI / 180));
+
+        if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
+            deltax += -sinr;
+            deltaz += cosr;
+        }
+        if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
+            deltax += cosr;
+            deltaz += sinr;
+        }
+        if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
+            deltax += sinr;
+            deltaz += -cosr;
+        }
+        if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
+            deltax += -cosr;
+            deltaz += -sinr;
+        }
+
+        camx += deltax * delta * speed;
+        camz += deltaz * delta * speed;
+
+
+
+        rot += Mouse.getDX() * xSensitivity;
+        pit -= Mouse.getDY() * ySensitivity;
+    }
+
+    public static void main(String[] args) {
+        Initialzer temp = new Initialzer();
+    }
+
+    public long getTime() {
+        return (Sys.getTime() * 1000) / Sys.getTimerResolution();
+    }
+    long lastFrame = getTime();
+    long time = getTime();
+
+    /*
+     * Changes the delta variable to show the time since the last frame.
+     */
+    public void getDelta() {
+        time = getTime();
+        delta = (time - lastFrame) / 1000.0;
+        lastFrame = time;
+    }
+}
